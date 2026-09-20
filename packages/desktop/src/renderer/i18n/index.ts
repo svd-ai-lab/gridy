@@ -1,4 +1,5 @@
 import * as i18n from "@solid-primitives/i18n"
+import { brandTranslationValues } from "../../../../app/src/i18n/branding"
 import {
   DESKTOP_NATIVE_LOCALES,
   detectDesktopNativeLocale,
@@ -186,7 +187,7 @@ const state = {
 
 state.dict = build(state.locale)
 
-const translate = i18n.translator(() => state.dict, i18n.resolveTemplate)
+const translate = i18n.translator(() => brandTranslationValues(state.dict, "Gridy"), i18n.resolveTemplate)
 
 export function t(key: keyof Dictionary, params?: Record<string, string | number>) {
   return translate(key, params)

@@ -1,6 +1,6 @@
-# OpenScience Agent Instructions
+# Gridy Agent Instructions
 
-OpenScience is an open science workbench built on upstream OpenCode.
+Gridy is an open science workbench built on upstream OpenCode.
 
 Use OpenCode's native model/provider setup. Do not assume a bundled model,
 shared API key, managed research provider, or private backend unless it is

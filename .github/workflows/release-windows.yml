@@ -1,137 +1,52 @@
-name: release-windows
-
+name: Release Gridy for Windows
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "OpenScience release version without the v prefix. Must match packages/desktop/package.json."
+        description: Product version without the v prefix
         required: true
         type: string
-      release_notes:
-        description: "User-facing release notes"
-        required: false
-        type: string
-      draft:
-        description: "Create a draft release"
-        required: true
-        default: true
-        type: boolean
-
 permissions:
   contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  windows-x64:
-    name: Windows x64 installer
+  windows:
     runs-on: windows-2025
+    env:
+      OPENCODE_CHANNEL: prod
+      HUSKY: "0"
+      RELEASE_VERSION: ${{ inputs.version }}
     defaults:
       run:
         shell: pwsh
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
-      - name: Normalize Windows checkout symlinks
-        run: |
-          $source = "packages/ui/src/custom-elements.d.ts"
-          foreach ($target in @("packages/app/src/custom-elements.d.ts", "packages/enterprise/src/custom-elements.d.ts")) {
-            $item = Get-Item $target -Force
-            if ($item.LinkType) {
-              Write-Host "$target is a $($item.LinkType); leaving it unchanged."
-              continue
-            }
-            Copy-Item $source $target -Force
-          }
-
-      - name: Validate release version
-        run: |
-          $package = Get-Content "packages/desktop/package.json" -Raw | ConvertFrom-Json
-          $inputVersion = "${{ inputs.version }}"
-          if ($package.version -ne $inputVersion) {
-            throw "Release version input '$inputVersion' must match packages/desktop/package.json version '$($package.version)'."
-          }
-
-          $tag = "v$inputVersion"
-          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
-          if ($existingTag) {
-            throw "Release tag '$tag' already exists on origin."
-          }
-
-      - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          node-version: "24"
-
-      - name: Setup Bun
-        uses: ./.github/actions/setup-bun
-
-      - name: Materialize science skills
-        run: bun run --cwd packages/desktop materialize:skills
-
-      - name: Typecheck desktop
-        run: bun run --cwd packages/desktop typecheck
-
-      - name: Build desktop
+          persist-credentials: false
+      - uses: ./.github/actions/setup-bun
+        with:
+          install-flags: --linker isolated --ignore-scripts
+      - name: Prepare and build
         run: |
-          $env:OPENCODE_CHANNEL = "prod"
-          bun run --cwd packages/desktop build
-
-      - name: Package Windows x64
-        run: |
-          $env:OPENCODE_CHANNEL = "prod"
-          bun run --cwd packages/desktop package:win:x64
-
-      - name: Generate SHA256
-        run: |
-          $dist = Join-Path $PWD "packages/desktop/dist"
-          $installer = Get-ChildItem $dist -Filter "OpenScience-win-x64.exe" | Select-Object -First 1
-          if (-not $installer) {
-            throw "OpenScience-win-x64.exe was not produced in $dist"
-          }
-          $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
-          "$hash  $($installer.Name)" | Set-Content -Path (Join-Path $dist "OpenScience-win-x64.exe.sha256.txt") -Encoding ascii
-
-      - name: Create GitHub release
+          $package = Get-Content packages/desktop/package.json -Raw | ConvertFrom-Json
+          if ($env:RELEASE_VERSION -ne $package.version) { throw "Version mismatch" }
+          bun run --cwd packages/core fix-node-pty
+          Copy-Item packages/ui/src/custom-elements.d.ts packages/app/src/custom-elements.d.ts -Force
+          try {
+            bun run --cwd packages/desktop typecheck
+            if ($LASTEXITCODE) { throw "Typecheck failed" }
+            bun run --cwd packages/desktop build
+            if ($LASTEXITCODE) { throw "Build failed" }
+          } finally { git restore packages/app/src/custom-elements.d.ts }
+          bun run --cwd packages/desktop package:win
+          if ($LASTEXITCODE) { throw "Packaging failed" }
+          bun packages/desktop/scripts/verify-release.ts
+          if ($LASTEXITCODE) { throw "Release verification failed" }
+      - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "v${{ inputs.version }}"
-          $notesInput = @'
-          ${{ inputs.release_notes }}
-          '@
-          $notesInput = $notesInput.Trim()
-          $notes = @"
-          OpenScience Windows x64 preview build.
-
-          This build is unsigned. Verify `OpenScience-win-x64.exe.sha256.txt` before installing.
-
-          $notesInput
-          "@
-          $notes = $notes.Trim()
-          $notesPath = Join-Path $env:RUNNER_TEMP "release-notes.md"
-          Set-Content -Path $notesPath -Value $notes -Encoding utf8
-
-          $dist = Join-Path $PWD "packages/desktop/dist"
-          $assets = @(
-            Join-Path $dist "OpenScience-win-x64.exe"
-            Join-Path $dist "OpenScience-win-x64.exe.blockmap"
-            Join-Path $dist "latest.yml"
-            Join-Path $dist "OpenScience-win-x64.exe.sha256.txt"
-          )
-          foreach ($asset in $assets) {
-            if (-not (Test-Path $asset)) {
-              throw "Missing release asset: $asset"
-            }
-          }
-
-          $args = @("release", "create", $tag, "--title", "OpenScience $tag", "--notes-file", $notesPath)
-          if ("${{ inputs.draft }}" -eq "true") {
-            $args += "--draft"
-          } else {
-            $args += "--latest"
-          }
-          $args += $assets
-          gh @args
+          $dist = "packages/desktop/dist"
+          $notes = Join-Path $env:RUNNER_TEMP "notes.md"
+          "Gridy for Windows x64. Manual deployment; automatic updates are disabled. This build is unsigned. Verify the SHA256 checksum before installing." | Set-Content $notes
+          gh release create "v$env:RELEASE_VERSION" "$dist/Gridy-win-x64.exe" "$dist/Gridy-win-x64.exe.blockmap" "$dist/Gridy-win-x64.exe.sha256.txt" --draft --title "Gridy $env:RELEASE_VERSION" --notes-file $notes
+          if ($LASTEXITCODE) { throw "Draft release upload failed" }

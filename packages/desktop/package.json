@@ -1,13 +1,12 @@
 {
-  "name": "@opencode-ai/desktop",
+  "name": "@svd/gridy-desktop",
   "private": true,
-  "version": "1.18.31",
+  "version": "0.2.0",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://opencode.ai",
+  "homepage": "https://github.com/svd-ai-lab/gridy",
   "author": {
-    "name": "OpenCode",
-    "email": "hello@opencode.ai"
+    "name": "SVD AI Lab"
   },
   "scripts": {
     "typecheck": "tsgo -b",
@@ -16,22 +15,27 @@
     "prebuild": "bun ./scripts/prebuild.ts",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "package": "electron-builder --config electron-builder.config.ts",
-    "package:mac": "electron-builder --mac --config electron-builder.config.ts",
-    "package:win": "electron-builder --win --config electron-builder.config.ts",
-    "package:linux": "electron-builder --linux --config electron-builder.config.ts",
-    "native:build": "bun install --cwd native"
+    "package": "bun ./scripts/materialize-gridy-skills.ts && electron-builder --config electron-builder.config.ts",
+    "package:mac": "bun ./scripts/materialize-gridy-skills.ts && electron-builder --mac --config electron-builder.config.ts",
+    "package:win": "bun ./scripts/materialize-gridy-skills.ts && bun ./scripts/prepare-tool-runtime.ts && electron-builder --win --config electron-builder.config.ts",
+    "package:linux": "bun ./scripts/materialize-gridy-skills.ts && electron-builder --linux --config electron-builder.config.ts",
+    "native:build": "bun install --cwd native",
+    "materialize:skills": "bun ./scripts/materialize-gridy-skills.ts",
+    "prepare:tool-runtime": "bun ./scripts/prepare-tool-runtime.ts",
+    "update:skills-lock": "bun ./scripts/update-gridy-skills-lock.ts",
+    "lint:research-bundle": "bun ./scripts/lint-research-bundle.ts",
+    "package:win:dir": "bun ./scripts/materialize-gridy-skills.ts && bun ./scripts/prepare-tool-runtime.ts && electron-builder --win dir --config electron-builder.config.ts"
   },
   "main": "./out/main/index.js",
   "dependencies": {
-    "@zip.js/zip.js": "2.7.62",
     "effect": "catalog:",
     "electron-context-menu": "4.1.2",
     "electron-log": "^5",
     "electron-store": "11.0.2",
     "electron-updater": "6.8.9",
     "electron-window-state": "^5.0.3",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "@zip.js/zip.js": "2.7.62"
   },
   "devDependencies": {
     "@actions/artifact": "4.0.0",

@@ -5,8 +5,9 @@ import {
   type DesktopNativeBundle,
   type DesktopNativeKey,
 } from "@opencode-ai/app/i18n/desktop-native"
+import { brandTranslationValues } from "../../../app/src/i18n/branding"
 
-let bundle: DesktopNativeBundle = { locale: "en", messages: { ...DESKTOP_NATIVE_ENGLISH } }
+let bundle: DesktopNativeBundle = { locale: "en", messages: brandTranslationValues(DESKTOP_NATIVE_ENGLISH, "Gridy") }
 
 export function setNativeTranslations(next: DesktopNativeBundle) {
   if (

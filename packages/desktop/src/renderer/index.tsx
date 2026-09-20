@@ -63,7 +63,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 const [updaterState, setUpdaterState] = createSignal<UpdaterState>({ status: "disabled" })
 void window.api.updater.subscribe(setUpdaterState)
 
-const deepLinkEvent = "openscience:deep-link"
+const deepLinkEvent = "opencode:deep-link"
 
 type DesktopWindowState = {
   id?: string
@@ -427,6 +427,7 @@ function DesktopRoot(props: { windowState: DesktopWindowState }) {
   return (
     <PlatformProvider value={platform}>
       <AppBaseProviders
+        productName="Gridy"
         locale={locale.latest}
         onNativeTranslations={(bundle) => void window.api.setNativeTranslations(bundle).catch(() => undefined)}
       >

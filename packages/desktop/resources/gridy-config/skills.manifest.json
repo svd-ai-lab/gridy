@@ -1,0 +1,268 @@
+{
+  "version": 1,
+  "defaultExcludes": [
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    "evidence",
+    "tests"
+  ],
+  "skills": [
+    {
+      "name": "comsol-sim",
+      "catalogDescription": "Build, inspect, run, debug, or revise COMSOL Multiphysics models through saved files, native executables, local documentation, or the sim runtime. Use for real COMSOL work, not generic theory.",
+      "repo": "svd-ai-lab/sim-plugin-comsol",
+      "path": "src/sim_plugin_comsol/_skills/comsol",
+      "localCandidates": [
+        "../sim-plugin-comsol"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "autodeskfusion",
+      "catalogDescription": "Inspect or edit Autodesk Fusion 360 models through its local MCP server, including bodies, sketches, exports, and short in-process adsk scripts.",
+      "repo": "svd-ai-lab/sim-plugin-autodeskfusion",
+      "path": "src/sim_plugin_autodeskfusion/_skills/autodeskfusion",
+      "localCandidates": [
+        "../sim-plugin-autodeskfusion"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "abaqus-sim",
+      "catalogDescription": "Automate, inspect, run, or debug Abaqus through existing artifacts, vendor batch commands, CAE noGUI, or sim-cli. Requires a user-owned Abaqus installation.",
+      "repo": "svd-ai-lab/sim-plugin-abaqus",
+      "path": "src/sim_plugin_abaqus/_skills/abaqus",
+      "localCandidates": [
+        "../sim-plugin-abaqus"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "fluent-sim",
+      "catalogDescription": "Work with Ansys Fluent through live sim sessions, direct PyFluent scripts, or file-side artifact review.",
+      "repo": "svd-ai-lab/sim-plugin-fluent",
+      "path": "src/sim_plugin_fluent/_skills/fluent",
+      "localCandidates": [
+        "../sim-plugin-fluent"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "workbench-sim",
+      "catalogDescription": "Run Ansys Workbench journals, inspect projects, manage persistent sessions, hand off to Mechanical, and troubleshoot through sim-cli.",
+      "repo": "svd-ai-lab/sim-plugin-workbench",
+      "path": "src/sim_plugin_workbench/_skills/workbench",
+      "localCandidates": [
+        "../sim-plugin-workbench"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "mechanical-sim",
+      "catalogDescription": "Drive Ansys Mechanical through PyMechanical or inspect solved RST files with DPF. Use for loads, boundary conditions, solving, and results.",
+      "repo": "svd-ai-lab/sim-plugin-mechanical",
+      "path": "src/sim_plugin_mechanical/_skills/mechanical",
+      "localCandidates": [
+        "../sim-plugin-mechanical"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "flotherm-sim",
+      "catalogDescription": "Run, inspect, or troubleshoot Simcenter Flotherm cases, including installation checks, project solves, imports, FloSCRIPT, monitoring, and result extraction.",
+      "repo": "svd-ai-lab/sim-plugin-flotherm",
+      "path": "src/sim_plugin_flotherm/_skills/flotherm",
+      "localCandidates": [
+        "../sim-plugin-flotherm"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "starccm-sim",
+      "catalogDescription": "Drive Simcenter STAR-CCM+ CFD or multiphysics tasks through native launchers, Java macros, saved projects, or sim-cli.",
+      "repo": "svd-ai-lab/sim-plugin-starccm",
+      "path": "src/sim_plugin_starccm/_skills/starccm",
+      "localCandidates": [
+        "../sim-plugin-starccm"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "geometry-preview",
+      "catalogDescription": "Generate, preview, export, and sanity-check topology-aware 3D geometry before CAD or solver import, including STEP, STL, meshes, cavities, contacts, and repeated structures.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "geometry-preview",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "simulation-need-discovery",
+      "catalogDescription": "Clarify simulation specs, client requests, assumptions, validation evidence, and deliverables before costly solves, sweeps, optimization, calibration, or coupled work.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "simulation-need-discovery",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "sim-paper-reproduction",
+      "catalogDescription": "Reproduce simulation evidence from papers and turn verified solver results into report claims. Pair with the relevant solver skill.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "sim-paper-reproduction",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "research-paper-data",
+      "catalogDescription": "Search scholarly literature and data, resolve DOI, arXiv, PMID or PMCID identifiers, find legal open-access text, and triage citations with visible providers.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "research-paper-data",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "ee-datasheet-compare",
+      "catalogDescription": "Compare electronic-component datasheets, BOM alternates, pinouts, packages, ratings, timing, thermal limits, and replacement risks.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "ee-datasheet-compare",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "external-solver-discovery",
+      "catalogDescription": "Discover and safely use an external solver, skill, plugin, MCP server, or native API when Gridy has no bundled first-party path.",
+      "repo": "svd-ai-lab/sim-plugin-index",
+      "path": "skills/external-solver-discovery",
+      "localCandidates": [
+        "../sim-plugin-index"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "pdf",
+      "catalogDescription": "Read, create, edit, merge, split, rotate, watermark, OCR, secure, extract from, or fill PDF files.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "pdf",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "docx",
+      "catalogDescription": "Read, create, edit, format, restructure, redline, comment on, or extract content from Microsoft Word DOCX files.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "docx",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "xlsx",
+      "catalogDescription": "Read, create, edit, clean, format, chart, calculate, or convert spreadsheet files such as XLSX, XLSM, CSV, and TSV when the deliverable is tabular.",
+      "repo": "svd-ai-lab/sim-skills",
+      "path": "xlsx",
+      "localCandidates": [
+        "../sim-skills"
+      ],
+      "license": "MIT"
+    },
+    {
+      "name": "hfss",
+      "catalogDescription": "Inspect, build, edit, run, monitor, export, or debug Ansys HFSS 3D models through PyAEDT, AEDT, sim-plugin-hfss, or native workflows.",
+      "repo": "svd-ai-lab/sim-plugin-hfss",
+      "path": "src/sim_plugin_hfss/_skills/hfss",
+      "localCandidates": [
+        "../sim-plugin-hfss"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "spaceclaim",
+      "catalogDescription": "Inspect, repair, defeature, script, import, export, or prepare CAD geometry in Ansys SpaceClaim or Discovery for downstream solvers.",
+      "repo": "svd-ai-lab/sim-plugin-spaceclaim",
+      "path": "skills/spaceclaim",
+      "localCandidates": [
+        "../sim-plugin-spaceclaim"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "hypermesh-sim",
+      "catalogDescription": "Prepare meshes or model decks in HyperMesh through a visible sim session when a human engineer should watch and inspect each step.",
+      "repo": "svd-ai-lab/sim-plugin-hypermesh",
+      "path": "src/sim_plugin_hypermesh/_skills/hypermesh",
+      "localCandidates": [
+        "../sim-plugin-hypermesh"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "matlab-sim",
+      "catalogDescription": "Run MATLAB scripts or Simulink models and control a local MATLAB install through batch, Engine, available MCP tools, or sim-cli.",
+      "repo": "svd-ai-lab/sim-plugin-matlab",
+      "path": "src/sim_plugin_matlab/_skills/matlab",
+      "localCandidates": [
+        "../sim-plugin-matlab"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "virtuoso",
+      "catalogDescription": "Control remote Cadence Virtuoso, ADE, Maestro, CIW, SKILL, schematic, layout, cellview, or OCEAN workflows through the bridge API.",
+      "repo": "svd-ai-lab/virtuoso-bridge-lite",
+      "path": "skills/virtuoso",
+      "localCandidates": [
+        "../virtuoso-bridge-lite"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "MIT"
+    },
+    {
+      "name": "spectre",
+      "catalogDescription": "Run Cadence Spectre netlist simulations remotely, monitor jobs, parse PSF results, or execute parallel transient, AC, PSS, and pnoise analyses.",
+      "repo": "svd-ai-lab/virtuoso-bridge-lite",
+      "path": "skills/spectre",
+      "localCandidates": [
+        "../virtuoso-bridge-lite"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "MIT"
+    },
+    {
+      "name": "optimizer",
+      "catalogDescription": "Optimize or tune multi-parameter designs with black-box search to meet specifications, including circuit sizing and performance tradeoffs.",
+      "repo": "svd-ai-lab/virtuoso-bridge-lite",
+      "path": "skills/optimizer",
+      "localCandidates": [
+        "../virtuoso-bridge-lite"
+      ],
+      "delivery": "http-with-baseline",
+      "license": "MIT"
+    }
+  ]
+}

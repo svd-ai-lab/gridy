@@ -1,5 +1,6 @@
 interface ImportMetaEnv {
   readonly OPENCODE_CHANNEL: string
+  readonly GRIDY_APP_IDS: Record<"dev" | "beta" | "prod", string>
 }
 
 interface ImportMeta {

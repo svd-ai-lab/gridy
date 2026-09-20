@@ -1,0 +1,9 @@
+{
+  "productName": "Gridy",
+  "installName": "gridy",
+  "appIds": {
+    "dev": "ai.svd.gridy.desktop.dev",
+    "beta": "ai.svd.gridy.desktop.beta",
+    "prod": "ai.svd.gridy.desktop"
+  }
+}
