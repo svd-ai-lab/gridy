@@ -4,6 +4,7 @@ import type { Prompt, PromptStore } from "@/context/prompt"
 import type { ModelSelection } from "@/context/local"
 
 let createPromptSubmit: typeof import("./submit").createPromptSubmit
+let recoverPromptAfterMissedEvents: typeof import("./submit").recoverPromptAfterMissedEvents
 
 const createdClients: string[] = []
 const createdSessions: string[] = []
@@ -135,6 +136,7 @@ beforeAll(async () => {
   mock.module("@opencode-ai/ui/toast", () => ({
     Toast: { Region: () => null },
     showToast: () => 0,
+    toaster: { dismiss: () => undefined },
   }))
 
   mock.module("@opencode-ai/core/util/encode", () => ({
@@ -276,6 +278,7 @@ beforeAll(async () => {
 
   const mod = await import("./submit")
   createPromptSubmit = mod.createPromptSubmit
+  recoverPromptAfterMissedEvents = mod.recoverPromptAfterMissedEvents
 })
 
 beforeEach(() => {
@@ -558,6 +561,7 @@ describe("prompt submit worktree selection", () => {
     })
 
     await submit.handleSubmit({ preventDefault: () => undefined } as unknown as Event)
+    await Bun.sleep(0)
 
     expect(optimistic[0]).toMatchObject({
       message: {
@@ -590,9 +594,73 @@ describe("prompt submit worktree selection", () => {
     const event = { preventDefault: () => undefined } as unknown as Event
 
     await submit.handleSubmit(event)
+    await Bun.sleep(0)
 
     expect(storedSessions["/repo/worktree-a"]).toHaveLength(1)
     expect(storedSessions["/repo/worktree-a"]?.[0]).toMatchObject({ id: "session-1", title: "New session 1" })
     expect(optimisticSeeded).toEqual([true])
+  })
+})
+
+describe("prompt completion recovery", () => {
+  test("does nothing when the event stream already cleared busy state", async () => {
+    let activeCalls = 0
+    const result = await recoverPromptAfterMissedEvents({
+      sessionID: "session-1",
+      isBusy: () => false,
+      active: async () => {
+        activeCalls++
+        return {}
+      },
+      refresh: async () => undefined,
+      setIdle: () => undefined,
+      wait: async () => undefined,
+    })
+
+    expect(result).toBe("event")
+    expect(activeCalls).toBe(0)
+  })
+
+  test("refreshes messages and clears stale busy state after backend completion", async () => {
+    let busy = true
+    let refreshes = 0
+    const result = await recoverPromptAfterMissedEvents({
+      sessionID: "session-1",
+      isBusy: () => busy,
+      active: async () => ({}),
+      refresh: async () => {
+        refreshes++
+      },
+      setIdle: () => {
+        busy = false
+      },
+      wait: async () => undefined,
+    })
+
+    expect(result).toBe("recovered")
+    expect(refreshes).toBe(1)
+    expect(busy).toBeFalse()
+  })
+
+  test("keeps waiting while the backend session is active", async () => {
+    let busy = true
+    let probes = 0
+    const result = await recoverPromptAfterMissedEvents({
+      sessionID: "session-1",
+      isBusy: () => busy,
+      active: async () => {
+        probes++
+        return probes === 1 ? { "session-1": { type: "running" } } : {}
+      },
+      refresh: async () => undefined,
+      setIdle: () => {
+        busy = false
+      },
+      wait: async () => undefined,
+    })
+
+    expect(result).toBe("recovered")
+    expect(probes).toBe(2)
+    expect(busy).toBeFalse()
   })
 })

@@ -63,12 +63,19 @@ globalThis.AI_SDK_LOG_WARNINGS = false
 const decodeMessageInfo = Schema.decodeUnknownExit(SessionV1.Info)
 const decodeMessagePart = Schema.decodeUnknownExit(SessionV1.Part)
 const MAX_MCP_RESOURCE_BLOB_BYTES = 10 * 1024 * 1024
-const SUPPORTED_MCP_RESOURCE_ATTACHMENT_MIMES = new Set([
-  "application/pdf",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
+const SUPPORTED_MCP_RESOURCE_ATTACHMENT_MIMES = new Set(["image/gif", "image/jpeg", "image/png", "image/webp"])
+const DEFERRED_DOCUMENT_ATTACHMENTS = new Map([
+  ["pdf", { label: "PDF", skill: "pdf" }],
+  ["docx", { label: "Word document", skill: "docx" }],
+  ["xlsx", { label: "spreadsheet", skill: "xlsx" }],
+])
+const DEFERRED_DOCUMENT_MIMES = new Map([
+  ["application/pdf", DEFERRED_DOCUMENT_ATTACHMENTS.get("pdf")!],
+  [
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    DEFERRED_DOCUMENT_ATTACHMENTS.get("docx")!,
+  ],
+  ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", DEFERRED_DOCUMENT_ATTACHMENTS.get("xlsx")!],
 ])
 
 const STRUCTURED_OUTPUT_DESCRIPTION = `Use this tool to return your final response in the requested structured format.
@@ -91,6 +98,45 @@ function formatMcpResourceBytes(value: number) {
   if (value < 1024) return `${value} B`
   if (value < 1024 * 1024) return `${Math.ceil(value / 1024)} KB`
   return `${Math.ceil(value / (1024 * 1024))} MB`
+}
+
+function deferredDocumentAttachment(input: { mime?: string; filename?: string }) {
+  const mime = input.mime?.split(";", 1)[0]?.trim().toLowerCase()
+  if (mime) {
+    const match = DEFERRED_DOCUMENT_MIMES.get(mime)
+    if (match) return match
+  }
+
+  const ext = input.filename?.split(/[\\/]/).pop()?.split(".").pop()?.toLowerCase()
+  return ext ? DEFERRED_DOCUMENT_ATTACHMENTS.get(ext) : undefined
+}
+
+function localPathFromFilename(filename: string | undefined) {
+  if (!filename) return undefined
+  if (path.isAbsolute(filename) || path.win32.isAbsolute(filename) || path.posix.isAbsolute(filename)) return filename
+  return undefined
+}
+
+function deferredDocumentPrompt(input: {
+  label: string
+  skill: string
+  filename?: string
+  filepath?: string
+  mime?: string
+}) {
+  const name = input.filename ?? input.filepath ?? input.label
+  const normalizedMime = input.mime?.split(";", 1)[0]?.trim().toLowerCase()
+  const mime = normalizedMime && DEFERRED_DOCUMENT_MIMES.has(normalizedMime) ? ` (${normalizedMime})` : ""
+  const location = input.filepath ? `Local path: ${input.filepath}.` : "No stable local file path was provided."
+  const next = input.filepath
+    ? `Use available local tools or Python packages to inspect it when needed. Load the bundled ${input.skill} skill only if its workflow would materially help.`
+    : "Ask the user to attach it from disk or place it in the workspace before inspecting it."
+  return [
+    `Document attachment: ${name}${mime}.`,
+    location,
+    `Gridy did not parse this ${input.label} locally or send the raw document to the model.`,
+    next,
+  ].join(" ")
 }
 
 function isOrphanedInterruptedTool(part: SessionV1.ToolPart) {
@@ -695,7 +741,6 @@ const layer = Layer.effect(
         ...part,
         id: part.id ? PartID.make(part.id) : PartID.ascending(),
       })
-
       const resolvePart: (part: PromptInput["parts"][number]) => Effect.Effect<Draft<SessionV1.Part>[]> = Effect.fn(
         "SessionPrompt.resolveUserPart",
       )(function* (part) {
@@ -785,6 +830,26 @@ const layer = Layer.effect(
           const url = new URL(part.url)
           switch (url.protocol) {
             case "data:":
+              {
+                const document = deferredDocumentAttachment({ mime: part.mime, filename: part.filename })
+                if (document) {
+                  const filepath = localPathFromFilename(part.filename)
+                  return [
+                    {
+                      messageID: info.id,
+                      sessionID: input.sessionID,
+                      type: "text",
+                      synthetic: true,
+                      text: deferredDocumentPrompt({
+                        ...document,
+                        filename: part.filename,
+                        filepath,
+                        mime: part.mime,
+                      }),
+                    },
+                  ]
+                }
+              }
               if (part.mime === "text/plain") {
                 return [
                   {
@@ -825,6 +890,24 @@ const layer = Layer.effect(
                     ask: () => Effect.void,
                   })
                   .pipe(Effect.onInterrupt(() => Effect.sync(() => controller.abort())))
+              }
+
+              const document = deferredDocumentAttachment({ mime, filename: part.filename ?? filepath })
+              if (document) {
+                return [
+                  {
+                    messageID: info.id,
+                    sessionID: input.sessionID,
+                    type: "text",
+                    synthetic: true,
+                    text: deferredDocumentPrompt({
+                      ...document,
+                      filename: part.filename ?? path.basename(filepath),
+                      filepath,
+                      mime,
+                    }),
+                  },
+                ]
               }
 
               if (mime === "text/plain") {

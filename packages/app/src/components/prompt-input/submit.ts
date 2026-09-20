@@ -22,7 +22,7 @@ import { ScopedKey } from "@/utils/server-scope"
 import { createPromptSubmissionState } from "./submission-state"
 import { normalizeSessionInfo } from "@/utils/session"
 import { Event } from "@opencode-ai/schema/event"
-import { blobDataUrl } from "@/utils/draft-store"
+import { commandAttachmentFiles, encodePromptAttachments } from "./attachment-submission"
 
 type PendingPrompt = {
   abort: AbortController
@@ -49,6 +49,40 @@ type FollowupSendInput = {
   messageID?: string
   optimisticBusy?: boolean
   before?: () => Promise<boolean> | boolean
+}
+
+type PromptRecoveryInput = {
+  sessionID: string
+  isBusy: () => boolean
+  active: () => Promise<Record<string, unknown>>
+  refresh: () => Promise<void>
+  setIdle: () => void
+  wait?: () => Promise<void>
+  attempts?: number
+}
+
+export async function recoverPromptAfterMissedEvents(input: PromptRecoveryInput) {
+  const wait = input.wait ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 30_000)))
+  const attempts = input.attempts ?? 10
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (!input.isBusy()) return "event" as const
+    await wait()
+    if (!input.isBusy()) return "event" as const
+
+    try {
+      const active = await input.active()
+      if (active[input.sessionID]) continue
+      await input.refresh()
+      input.setIdle()
+      return "recovered" as const
+    } catch {
+      // The event stream remains authoritative. A failed watchdog probe is
+      // retried without changing optimistic UI state.
+    }
+  }
+
+  return "timeout" as const
 }
 
 const draftText = (prompt: Prompt) => prompt.map((part) => ("content" in part ? part.content : "")).join("")
@@ -96,12 +130,7 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
           providerID: input.draft.model.providerID,
           variant: input.draft.variant,
         },
-        files: await Promise.all(
-          images.map(async (attachment) => ({
-            uri: await blobDataUrl(attachment.blob, attachment.mime),
-            name: attachment.filename,
-          })),
-        ),
+        files: await commandAttachmentFiles(images, input.draft.sessionDirectory),
       })
       return true
     } catch (err) {
@@ -111,12 +140,7 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
   }
 
   const messageID = input.messageID ?? Identifier.ascending("message")
-  const encodedImages = await Promise.all(
-    images.map(async (attachment) => ({
-      ...attachment,
-      dataUrl: await blobDataUrl(attachment.blob, attachment.mime),
-    })),
-  )
+  const encodedImages = await encodePromptAttachments(images)
   const { requestParts, optimisticParts } = buildRequestParts({
     prompt: input.draft.prompt,
     context: input.draft.context,
@@ -197,6 +221,15 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
           : [],
       ),
     })
+    if (input.optimisticBusy) {
+      void recoverPromptAfterMissedEvents({
+        sessionID: input.draft.sessionID,
+        isBusy: () => input.serverSync.session.data?.session_status?.[input.draft.sessionID]?.type === "busy",
+        active: () => input.api.active(),
+        refresh: () => input.serverSync.session.sync(input.draft.sessionID, { force: true }),
+        setIdle,
+      })
+    }
     return true
   } catch (err) {
     batch(() => {
@@ -525,12 +558,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
             arguments: args.join(" "),
             agent,
             model: { id: model.modelID, providerID: model.providerID, variant },
-            files: await Promise.all(
-              images.map(async (attachment) => ({
-                uri: await blobDataUrl(attachment.blob, attachment.mime),
-                name: attachment.filename,
-              })),
-            ),
+            files: await commandAttachmentFiles(images, sessionDirectory),
           })
           .catch((err) => {
             serverSync().session.set("session_status", session.id, { type: "idle" })

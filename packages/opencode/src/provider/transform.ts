@@ -300,8 +300,13 @@ function normalizeMessages(
     return result
   }
 
-  // Deepseek requires all assistant messages to have reasoning on them
-  if (model.api.id.toLowerCase().includes("deepseek")) {
+  // Providers using reasoning_content require it on every assistant message.
+  // Check the declared capability as custom endpoints can use model aliases.
+  const requiresReasoningContent =
+    model.api.id.toLowerCase().includes("deepseek") ||
+    (typeof model.capabilities.interleaved === "object" &&
+      model.capabilities.interleaved.field === "reasoning_content")
+  if (requiresReasoningContent) {
     msgs = msgs.map((msg) => {
       if (msg.role !== "assistant") return msg
       if (Array.isArray(msg.content)) {
@@ -1258,7 +1263,6 @@ export function options(input: {
       clear_thinking: false,
     }
   }
-
   if (input.model.providerID === "meta" && input.model.api.npm === "@ai-sdk/openai") {
     result["reasoningSummary"] = "auto"
     result["include"] = INCLUDE_ENCRYPTED_REASONING

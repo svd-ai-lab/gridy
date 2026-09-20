@@ -355,6 +355,7 @@ describe("ProviderTransform.options - zai/zhipuai thinking", () => {
       })
     })
   }
+
 })
 
 describe("ProviderTransform.options - minimax m3 thinking", () => {
@@ -814,6 +815,7 @@ describe("ProviderTransform.providerOptions", () => {
       bedrock: { cachePoint: { type: "default" } },
     })
   })
+
 
   test("forces reasoning for custom OpenAI package models with explicit effort", () => {
     const model = createModel({
@@ -2194,8 +2196,64 @@ describe("ProviderTransform.message - Mistral tool call IDs", () => {
   )
 })
 
-describe("ProviderTransform.message - DeepSeek reasoning content", () => {
-  test("DeepSeek with tool calls includes reasoning_content in providerOptions", () => {
+describe("ProviderTransform.message - custom model alias", () => {
+  const aliasedModel = {
+    id: ModelV2.ID.make("custom/reasoner"),
+    providerID: ProviderV2.ID.make("custom"),
+    api: {
+      id: "reasoner",
+      url: "https://api.example.com/v1",
+      npm: "@ai-sdk/openai-compatible",
+    },
+    name: "Custom reasoner",
+    capabilities: {
+      temperature: true,
+      reasoning: true,
+      attachment: true,
+      toolcall: true,
+      input: { text: true, audio: false, image: true, video: false, pdf: false },
+      output: { text: true, audio: false, image: false, video: false, pdf: false },
+      interleaved: { field: "reasoning_content" as const },
+    },
+    cost: {
+      input: 0,
+      output: 0,
+      cache: { read: 0, write: 0 },
+    },
+    limit: {
+      context: 250000,
+      input: 250000,
+      output: 64000,
+    },
+    status: "active" as const,
+    options: {},
+    headers: {},
+    release_date: "2026-08-15",
+  }
+
+  test("preserves image input for the multimodal custom model alias", () => {
+    const image = "data:image/png;base64,iVBORw0KGgo="
+    const result = ProviderTransform.message(
+      [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Describe this image" },
+            { type: "image", image },
+          ],
+        },
+      ] as any[],
+      aliasedModel,
+      {},
+    )
+
+    expect(result[0].content).toEqual([
+      { type: "text", text: "Describe this image" },
+      { type: "image", image },
+    ])
+  })
+
+  test("an aliased model with tool calls includes reasoning_content in providerOptions", () => {
     const msgs = [
       {
         role: "assistant",
@@ -2213,40 +2271,7 @@ describe("ProviderTransform.message - DeepSeek reasoning content", () => {
 
     const result = ProviderTransform.message(
       msgs,
-      {
-        id: ModelV2.ID.make("deepseek/deepseek-chat"),
-        providerID: ProviderV2.ID.make("deepseek"),
-        api: {
-          id: "deepseek-chat",
-          url: "https://api.deepseek.com",
-          npm: "@ai-sdk/openai-compatible",
-        },
-        name: "DeepSeek Chat",
-        capabilities: {
-          temperature: true,
-          reasoning: true,
-          attachment: false,
-          toolcall: true,
-          input: { text: true, audio: false, image: false, video: false, pdf: false },
-          output: { text: true, audio: false, image: false, video: false, pdf: false },
-          interleaved: {
-            field: "reasoning_content",
-          },
-        },
-        cost: {
-          input: 0.001,
-          output: 0.002,
-          cache: { read: 0.0001, write: 0.0002 },
-        },
-        limit: {
-          context: 128000,
-          output: 8192,
-        },
-        status: "active",
-        options: {},
-        headers: {},
-        release_date: "2023-04-01",
-      },
+      aliasedModel,
       {},
     )
 
@@ -2260,6 +2285,24 @@ describe("ProviderTransform.message - DeepSeek reasoning content", () => {
       },
     ])
     expect(result[0].providerOptions?.openaiCompatible?.reasoning_content).toBe("Let me think about this...")
+  })
+
+  test("an aliased model adds empty reasoning_content to assistant tool calls", () => {
+    const result = ProviderTransform.message(
+      [
+        {
+          role: "assistant",
+          content: [{ type: "tool-call", toolCallId: "test", toolName: "bash", input: { command: "true" } }],
+        },
+      ] as any[],
+      aliasedModel,
+      {},
+    )
+
+    expect(result[0].providerOptions?.openaiCompatible?.reasoning_content).toBe("")
+    expect(result[0].content).toEqual([
+      { type: "tool-call", toolCallId: "test", toolName: "bash", input: { command: "true" } },
+    ])
   })
 
   test("Non-DeepSeek providers leave reasoning content unchanged", () => {

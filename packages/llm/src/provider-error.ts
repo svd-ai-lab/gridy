@@ -29,6 +29,7 @@ const patterns = [
   /model_context_window_exceeded/i,
   /too many tokens/i,
   /token limit exceeded/i,
+  /actual\s+text\s+length\s+\d+\s+exceeds\s+maximum\s+\d+/i,
 ]
 
 const exclusions = [/^(throttling error|service unavailable):/i, /rate limit/i, /too many requests/i]

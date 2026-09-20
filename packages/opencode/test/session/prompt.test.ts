@@ -8,7 +8,7 @@ import { EventV2Bridge } from "@/event-v2-bridge"
 import { expect } from "bun:test"
 import { Cause, Deferred, Duration, Effect, Exit, Fiber, Layer } from "effect"
 import path from "path"
-import { fileURLToPath } from "url"
+import { fileURLToPath, pathToFileURL } from "url"
 import { NamedError } from "@opencode-ai/core/util/error"
 import { Agent as AgentSvc } from "../../src/agent/agent"
 import { BackgroundJob } from "@/background/job"
@@ -286,6 +286,10 @@ const cfg = {
     },
   },
 }
+
+const PDF_MIME = "application/pdf"
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 function providerCfg(url: string) {
   return {
@@ -2202,6 +2206,87 @@ noLLMServer.instance(
       expect(text[0]?.startsWith("Called the Read tool with the following input:")).toBe(true)
       expect(text[1]?.includes("Read tool failed to read")).toBe(true)
       expect(text[2]).toBe("after-file")
+
+      yield* sessions.remove(session.id)
+    }),
+  { config: cfg },
+)
+
+// Deferred document attachment handling
+
+noLLMServer.instance(
+  "defers PDF, DOCX, and XLSX data attachments without stable paths",
+  () =>
+    Effect.gen(function* () {
+      const prompt = yield* SessionPrompt.Service
+      const sessions = yield* Session.Service
+      const session = yield* sessions.create({})
+
+      const msg = yield* prompt.prompt({
+        sessionID: session.id,
+        agent: "build",
+        noReply: true,
+        parts: [
+          { type: "text", text: "summarize these local documents" },
+          { type: "file", mime: PDF_MIME, filename: "worker-proof.pdf", url: `data:${PDF_MIME};base64,JVBERi0xLjQK` },
+          { type: "file", mime: DOCX_MIME, filename: "worker-proof.docx", url: `data:${DOCX_MIME};base64,UEsDBAo=` },
+          { type: "file", mime: XLSX_MIME, filename: "worker-proof.xlsx", url: `data:${XLSX_MIME};base64,UEsDBAo=` },
+        ],
+      })
+
+      if (msg.info.role !== "user") throw new Error("expected user message")
+      const stored = yield* MessageV2.get({ sessionID: session.id, messageID: msg.info.id })
+      const textParts = stored.parts.filter((part): part is SessionV1.TextPart => part.type === "text")
+      const fileParts = stored.parts.filter((part): part is SessionV1.FilePart => part.type === "file")
+
+      expect(textParts.some((part) => part.text.includes("No stable local file path was provided"))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("did not parse this PDF locally"))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("did not parse this Word document locally"))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("did not parse this spreadsheet locally"))).toBe(true)
+      expect(fileParts.some((part) => part.filename?.startsWith("worker-proof."))).toBe(false)
+
+      yield* sessions.remove(session.id)
+    }),
+  { config: cfg },
+)
+
+noLLMServer.instance(
+  "defers local document paths to agent tools",
+  () =>
+    Effect.gen(function* () {
+      const { directory: dir } = yield* TestInstance
+      const pdf = path.join(dir, "paper.pdf")
+      const docx = path.join(dir, "notes.docx")
+      const xlsx = path.join(dir, "data.xlsx")
+      yield* writeText(pdf, "%PDF-1.4\n")
+      yield* writeText(docx, "placeholder")
+      yield* writeText(xlsx, "placeholder")
+      const prompt = yield* SessionPrompt.Service
+      const sessions = yield* Session.Service
+      const session = yield* sessions.create({})
+      const msg = yield* prompt.prompt({
+        sessionID: session.id,
+        agent: "build",
+        noReply: true,
+        parts: [
+          { type: "text", text: "inspect these documents" },
+          { type: "file", mime: "text/plain", filename: "paper.pdf", url: pathToFileURL(pdf).href },
+          { type: "file", mime: DOCX_MIME, filename: "notes.docx", url: pathToFileURL(docx).href },
+          { type: "file", mime: XLSX_MIME, filename: "data.xlsx", url: pathToFileURL(xlsx).href },
+        ],
+      })
+
+      if (msg.info.role !== "user") throw new Error("expected user message")
+      const stored = yield* MessageV2.get({ sessionID: session.id, messageID: msg.info.id })
+      const textParts = stored.parts.filter((part): part is SessionV1.TextPart => part.type === "text")
+      const fileParts = stored.parts.filter((part): part is SessionV1.FilePart => part.type === "file")
+
+      expect(textParts.some((part) => part.text.includes(`Local path: ${pdf}`))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("Use available local tools or Python packages"))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("bundled pdf skill only if"))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("bundled docx skill only if"))).toBe(true)
+      expect(textParts.some((part) => part.text.includes("bundled xlsx skill only if"))).toBe(true)
+      expect(fileParts.some((part) => ["paper.pdf", "notes.docx", "data.xlsx"].includes(part.filename ?? ""))).toBe(false)
 
       yield* sessions.remove(session.id)
     }),

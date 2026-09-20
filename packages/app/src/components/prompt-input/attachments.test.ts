@@ -8,6 +8,16 @@ describe("attachmentMime", () => {
     expect(await attachmentMime(file)).toBe("application/pdf")
   })
 
+  test("keeps Office documents by extension when browser mime is generic", async () => {
+    const docx = new File([Uint8Array.of(80, 75, 3, 4)], "notes.docx", { type: "application/octet-stream" })
+    const xlsx = new File([Uint8Array.of(80, 75, 3, 4)], "data.xlsx", { type: "" })
+
+    expect(await attachmentMime(docx)).toBe(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    expect(await attachmentMime(xlsx)).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  })
+
   test("normalizes structured text types to text/plain", async () => {
     const file = new File(['{"ok":true}\n'], "data.json", { type: "application/json" })
     expect(await attachmentMime(file)).toBe("text/plain")

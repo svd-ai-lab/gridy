@@ -393,6 +393,7 @@ function DraftProviders(props: ParentProps) {
 export function AppBaseProviders(
   props: ParentProps<{
     locale?: Locale
+    productName?: string
     onNativeTranslations?: Parameters<typeof LanguageProvider>[0]["onNativeTranslations"]
   }>,
 ) {
@@ -404,7 +405,7 @@ export function AppBaseProviders(
           void window.api?.setTitlebar?.({ mode, scheme })
         }}
       >
-        <LanguageProvider locale={props.locale} onNativeTranslations={props.onNativeTranslations}>
+        <LanguageProvider locale={props.locale} productName={props.productName} onNativeTranslations={props.onNativeTranslations}>
           <UiI18nBridge>
             <ErrorBoundary
               fallback={(error) => {

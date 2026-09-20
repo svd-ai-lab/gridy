@@ -6,6 +6,7 @@ import { pluralCategory, type UiI18nPluralKey } from "@opencode-ai/ui/context/i1
 import { Persist, persisted } from "@/utils/persist"
 import { dict as en } from "@/i18n/en"
 import { dict as uiEn } from "@opencode-ai/ui/i18n/en"
+import { brandTranslationValues } from "@/i18n/branding"
 import {
   createDesktopNativeBundle,
   detectDesktopNativeLocale,
@@ -166,7 +167,11 @@ export function loadInitialLocale() {
 export const { use: useLanguage, provider: LanguageProvider } = createSimpleContext({
   name: "Language",
   gate: false,
-  init: (props: { locale?: Locale; onNativeTranslations?: (bundle: DesktopNativeBundle) => void }) => {
+  init: (props: {
+    locale?: Locale
+    productName?: string
+    onNativeTranslations?: (bundle: DesktopNativeBundle) => void
+  }) => {
     const initial = props.locale ?? readStoredLocale() ?? detectLocale()
     const [store, setStore, _, ready] = persisted(
       Persist.global("language", ["language.v1"]),
@@ -188,15 +193,19 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
     const [dict] = createResource(locale, loadDict, {
       initialValue: dicts.get(initial) ?? base,
     })
+    const branded = createMemo(() => brandTranslationValues(dict() ?? base, props.productName))
 
-    const t = i18n.translator(() => dict() ?? base, i18n.resolveTemplate) as (
+    const t = i18n.translator(branded, i18n.resolveTemplate) as (
       key: keyof Dictionary,
       params?: Record<string, string | number | boolean>,
     ) => string
 
     const plural = (key: PluralKey, count: number, params?: Record<string, string | number | boolean>) => {
       const category = pluralCategory(intl(), count)
-      const current = (dict.loading ? base : (dict() ?? base)) as Record<string, string>
+      const current = (dict.loading ? brandTranslationValues(base, props.productName) : branded()) as Record<
+        string,
+        string
+      >
       const candidate = `${key}.${category}`
       const fallback = `${key}.other`
       return i18n.resolveTemplate(current[candidate] ?? current[fallback] ?? fallback, { ...params, count })
@@ -214,8 +223,7 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
 
     createEffect(() => {
       if (!props.onNativeTranslations || dict.loading) return
-      const current = dict()
-      if (!current) return
+      const current = branded()
       props.onNativeTranslations(
         createDesktopNativeBundle(locale(), (key) => current[key] ?? DESKTOP_NATIVE_ENGLISH[key]),
       )

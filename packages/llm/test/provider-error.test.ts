@@ -13,6 +13,8 @@ describe("provider error classification", () => {
       "Prompt has 5,958,968 tokens, but the configured context size is 256,000 tokens",
       "Too many tokens",
       "Token limit exceeded",
+      "actual text length 16778911 exceeds maximum 10485760",
+      "ACTUAL   TEXT\tLENGTH 16778911 EXCEEDS\nMAXIMUM 10485760",
     ]
 
     expect(messages.every(isContextOverflow)).toBe(true)
@@ -23,6 +25,9 @@ describe("provider error classification", () => {
       "Throttling error: Too many tokens, please wait before trying again.",
       "Rate limit exceeded, please retry after 30 seconds.",
       "Too many requests. Please slow down.",
+      "Rate limit: actual requests 120 exceeds maximum 60 per minute.",
+      "Validation failed: actual text length is invalid for field maximum_length.",
+      "HTTP 400: value 16778911 exceeds maximum 10485760.",
     ]
 
     expect(messages.some(isContextOverflow)).toBe(false)
