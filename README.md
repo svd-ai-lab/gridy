@@ -1,126 +1,55 @@
-# Open Engineer
+# Gridy
 
-Open Engineer is an open source engineering workbench based on
-[OpenCode](https://github.com/anomalyco/opencode).
+Gridy is an open-source engineering workbench built on [OpenCode](https://github.com/anomalyco/opencode).
+It combines native model providers, local tools, engineering skills, and PDF,
+Word, and Excel workflows.
 
-The first release targets Windows x64 and bundles engineering and
-science-oriented skills and workflows on top of upstream OpenCode. It does not
-include a private login system, a model proxy, a shared API key, or a bundled
-default model. Models are configured through OpenCode's native providers,
-including OpenCode Zen, Anthropic, OpenAI, OpenRouter, Gemini, Ollama, and other
-upstream providers.
+Gridy is designed for enterprise self-deployment. It starts without a Gridy
+account and uses your chosen provider or local model. Connect a provider in
+Settings, configure an OpenAI-compatible endpoint, or use the free models
+currently offered through OpenCode. Provider availability and terms can change.
 
-## Windows Preview
+## Windows
 
-Download the latest Windows installer from
-[GitHub Releases](https://github.com/svd-ai-lab/open-engineer/releases).
+Download the Windows x64 installer and SHA256 checksum from
+[GitHub Releases](https://github.com/svd-ai-lab/gridy/releases).
+See the release notes for signing status.
 
-Initial artifacts:
+Application and skill bundles do not update automatically. Deploy a reviewed
+release to upgrade; the installer supports upgrades within this edition.
+Engineering and document skills are pinned and included for offline discovery.
+Model services and initial installation of tool dependencies may require a
+network connection. Commercial engineering applications and licenses are
+supplied separately.
 
-- `OpenScience-win-x64.exe`
-- `OpenScience-win-x64.exe.blockmap`
-- `latest.yml`
-- `OpenScience-win-x64.exe.sha256.txt`
+Only one Gridy edition can be installed at a time. To switch from managed Gridy
+or OpenScience, uninstall it in Windows Settings first. Its data is retained,
+and this edition starts with a separate profile. Conversations and credentials
+are not imported.
 
-The v0 Windows build is unsigned. Verify the SHA256 file before installing.
+## Build
 
-## Bundled Science Skills
+Install Git, Node.js 24, and the Bun version declared in `package.json`.
+From the repository root on Windows PowerShell:
 
-Open Engineer materializes the bundled skills at build time into
-`packages/desktop/resources/openscience-config/skills`.
-
-<img width="2560" height="1504" alt="skill_list_02" src="https://github.com/user-attachments/assets/99f12927-437d-4888-a3a3-bc66ee4902c1" />
-<img width="2560" height="1504" alt="demo_paper_search" src="https://github.com/user-attachments/assets/9ca99160-dd4d-4638-a4df-2978387716aa" />
-
-v0 skills:
-
-- `research-paper-data`: public scholarly metadata search, identifier
-  resolution, and legal open-access full-text discovery.
-- `pdf`, `docx`, `xlsx`: scientific document and table workflows.
-- `sim-paper-reproduction`: evidence-first simulation paper reproduction.
-- `simulation-need-discovery`: simulation requirement scoping.
-- `geometry-preview`: lightweight geometry generation and QA before CAD or
-  solver work.
-
-Solver skills, one per supported CAE/CAD tool, each routing agent workflows
-against the real solver (saved files, batch execution, or live sessions):
-
-- `comsol-sim` (COMSOL Multiphysics)
-- `abaqus-sim` (Abaqus)
-- `fluent-sim` (Ansys Fluent)
-- `workbench-sim` (Ansys Workbench)
-- `mechanical-sim` (Ansys Mechanical)
-- `flotherm-sim` (Siemens Simcenter Flotherm)
-- `starccm-sim` (Simcenter STAR-CCM+)
-- `hfss` (Ansys HFSS)
-- `hypermesh-sim` (Altair HyperMesh)
-- `matlab-sim` (MATLAB)
-- `stata-sim` (Stata)
-- `autodeskfusion` (Autodesk Fusion)
-- `rhino` (Rhino)
-- `virtuoso` (Cadence Virtuoso bridge guidance)
-- `spectre` (Cadence Spectre netlist simulation guidance)
-- `optimizer` (black-box design optimization workflows)
-
-External skills are locked by source repository, commit, path, and `SKILL.md`
-SHA256 in `skills.lock.json`. Bundled capability manifests live in
-`packages/desktop/resources/openscience-config/`; generated `skills/` output
-should not be edited by hand.
-
-The Cadence-related skills do not bundle Cadence Virtuoso, Spectre, PDKs,
-licenses, SSH credentials, EDA servers, or customer designs. They guide the
-agent only after the user's actual environment and bridge configuration are
-available.
-
-## Paper Search
-
-The bundled `research-paper-data` skill uses discoverable public or
-user-configured sources:
-
-- Public defaults: Crossref, arXiv, Europe PMC, DataCite, OpenAlex.
-- Optional: `UNPAYWALL_EMAIL` for Unpaywall legal OA discovery.
-- Optional: `OPENALEX_MAILTO`, `CROSSREF_MAILTO`, or
-  `RESEARCH_CONTACT_EMAIL` for polite pool access.
-
-
-<img width="2560" height="1504" alt="skill_list_01" src="https://github.com/user-attachments/assets/a97366f2-343b-4669-a78d-c9173e3f6112" />
-
-## Development
-
-```bash
-bun install --linker hoisted
-bun run --cwd packages/desktop typecheck
-bun run --cwd packages/desktop materialize:skills
-$env:OPENCODE_CHANNEL="prod"; bun run --cwd packages/desktop build
-$env:OPENCODE_CHANNEL="prod"; bun run --cwd packages/desktop package:win:x64
+```powershell
+git config --global core.longpaths true
+bun install --linker isolated --ignore-scripts
+bun run --cwd packages/core fix-node-pty
+$env:OPENCODE_CHANNEL = "prod"
+Copy-Item packages/ui/src/custom-elements.d.ts packages/app/src/custom-elements.d.ts -Force
+try { bun run --cwd packages/desktop build }
+finally { git restore packages/app/src/custom-elements.d.ts }
+bun run --cwd packages/desktop package:win
+bun packages/desktop/scripts/verify-release.ts
 ```
 
-The desktop sidecar is started with only:
+The temporary copy handles Windows checkouts without Git symlinks. The installer
+is written to `packages/desktop/dist`. Skill sources and revisions
+are recorded in `packages/desktop/resources/gridy-config/skills.manifest.json`
+and `skills.lock.json`. Source repositories are public.
 
-```text
-OPENCODE_CONFIG_DIR=<bundled openscience-config>
-```
+## License
 
-Open Engineer intentionally does not set `OPENCODE_CONFIG`, does not override the
-default model/provider, and does not inject API keys.
-
-## Versioning
-
-Open Engineer has its own desktop release version, independent of upstream
-OpenCode. The product version lives in `packages/desktop/package.json` and is
-the version used by Windows installers, update metadata, and GitHub release
-tags.
-
-The upstream OpenCode base and WSL OpenCode CLI target remain separate. They
-come from the workspace OpenCode package version in
-`packages/opencode/package.json`. Do not use the upstream OpenCode tag as the
-Open Engineer desktop package version unless the product release intentionally
-chooses the same number.
-
-The Windows release workflow verifies that the manual release input matches the
-desktop package version before building.
-
-## Attribution
-
-Open Engineer is based on upstream OpenCode v1.17.11 and keeps the upstream MIT
-license. See [LICENSE](LICENSE).
+Gridy preserves OpenCode's [MIT license](LICENSE). Bundled skills include their
+source provenance and license notices. Dependencies retain their own licenses.

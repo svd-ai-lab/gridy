@@ -49,7 +49,7 @@ describe("buildRequestParts", () => {
     expect(result.optimisticParts.every((part) => part.sessionID === "ses_1" && part.messageID === "msg_1")).toBe(true)
   })
 
-  test("keeps multiple uploaded attachments in order", () => {
+  test("keeps image uploads as data attachments and defers documents without paths", () => {
     const result = buildRequestParts({
       prompt: [{ type: "text", content: "check these", start: 0, end: 11 }],
       context: [],
@@ -70,9 +70,40 @@ describe("buildRequestParts", () => {
     })
 
     const files = result.requestParts.filter((part) => part.type === "file" && part.url.startsWith("data:"))
+    const synthetic = result.requestParts.filter((part) => part.type === "text" && part.synthetic)
 
-    expect(files).toHaveLength(2)
-    expect(files.map((part) => (part.type === "file" ? part.filename : ""))).toEqual(["a.png", "b.pdf"])
+    expect(files).toHaveLength(1)
+    expect(files.map((part) => (part.type === "file" ? part.filename : ""))).toEqual(["a.png"])
+    expect(synthetic.some((part) => part.type === "text" && part.text.includes("b.pdf"))).toBe(true)
+    expect(synthetic.some((part) => part.type === "text" && part.text.includes("did not send the raw document"))).toBe(true)
+  })
+
+  test("uses a local file URL for document attachments with a source path", () => {
+    const result = buildRequestParts({
+      prompt: [],
+      context: [],
+      images: [
+        {
+          type: "image",
+          id: "doc_1",
+          filename: "paper.pdf",
+          sourcePath: "C:\\Users\\Luke\\Downloads\\paper.pdf",
+          mime: "application/pdf",
+          dataUrl: "data:application/pdf;base64,BBB",
+        },
+      ],
+      text: "inspect this",
+      messageID: "msg_doc_source",
+      sessionID: "ses_doc_source",
+      sessionDirectory: "C:\\Repos\\sst\\opencode",
+    })
+
+    const file = result.requestParts.find((part) => part.type === "file")
+
+    expect(file?.filename).toBe("paper.pdf")
+    expect(file?.url).toMatch(/^file:\/\/\/C:/)
+    expect(file?.url).toContain("paper.pdf")
+    expect(file?.url).not.toStartWith("data:")
   })
 
   test("preserves an external attachment source path for the model", () => {
@@ -98,6 +129,41 @@ describe("buildRequestParts", () => {
     expect(result.requestParts.find((part) => part.type === "file")?.filename).toBe(
       "C:\\Users\\Luke\\AppData\\Roaming\\ai.opencode.desktop.beta\\opencode.global.dat",
     )
+  })
+
+  test("preserves reference aliases as directory file parts", () => {
+    const result = buildRequestParts({
+      prompt: [
+        {
+          type: "file",
+          path: "/repo/../docs",
+          content: "@docs",
+          start: 0,
+          end: 5,
+          mime: "application/x-directory",
+          filename: "docs",
+        },
+      ],
+      context: [],
+      images: [],
+      text: "@docs",
+      messageID: "msg_reference",
+      sessionID: "ses_reference",
+      sessionDirectory: "/repo/app",
+    })
+
+    const filePart = result.requestParts.find((part) => part.type === "file")
+    expect(filePart).toBeDefined()
+    if (filePart?.type === "file") {
+      expect(filePart.mime).toBe("application/x-directory")
+      expect(filePart.filename).toBe("docs")
+      expect(filePart.url).toBe("file:///repo/../docs")
+      expect(filePart.source?.type).toBe("file")
+      if (filePart.source?.type === "file") {
+        expect(filePart.source.path).toBe("/repo/../docs")
+        expect(filePart.source.text.value).toBe("@docs")
+      }
+    }
   })
 
   test("deduplicates context files when prompt already includes same path", () => {

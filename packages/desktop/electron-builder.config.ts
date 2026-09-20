@@ -1,146 +1,54 @@
-import { execFile } from "node:child_process"
+import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { promisify } from "node:util"
-
 import type { Configuration } from "electron-builder"
+import { loadProductConfig, resolveChannel } from "./scripts/product"
 
-const execFileAsync = promisify(execFile)
+const product = loadProductConfig()
+const channel = resolveChannel()
+const appId = product.appIds[channel]
 const packageDir = path.dirname(fileURLToPath(import.meta.url))
-const rootDir = path.resolve(packageDir, "../..")
-const signScript = path.join(rootDir, "script", "sign-windows.ps1")
+const nativeExclusions = [["@lydell", "node-pty"], ["@parcel", "watcher"]].flatMap(([scope, name]) =>
+  readdirSync(path.join(packageDir, "node_modules", scope), { withFileTypes: true })
+    .filter((entry) => entry.name.startsWith(`${name}-`) && entry.name !== `${name}-${process.platform}-${process.arch}`)
+    .map((entry) => `!node_modules/${scope}/${entry.name}/**`),
+)
 
-async function signWindows(configuration: { path: string }) {
-  if (process.platform !== "win32") return
-  if (process.env.GITHUB_ACTIONS !== "true") return
-
-  await execFileAsync(
-    "pwsh",
-    ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", signScript, configuration.path],
-    { cwd: rootDir },
-  )
-}
-
-const channel = (() => {
-  const raw = process.env.OPENCODE_CHANNEL
-  if (raw === "dev" || raw === "beta" || raw === "prod") return raw
-  return "dev"
-})()
-
-const APP_IDS = {
-  dev: "ai.svd.openscience.desktop.dev",
-  beta: "ai.svd.openscience.desktop.beta",
-  prod: "ai.svd.openscience.desktop",
-} as const
-
-const getBase = (appId: string): Configuration => ({
-  artifactName: "OpenScience-${os}-${arch}.${ext}",
-  directories: {
-    output: "dist",
-    buildResources: "resources",
-  },
-  // Linux launchers are .desktop files, so this is the desktop file name,
-  // not just the app id. For prod, app id "ai.svd.openscience.desktop"
-  // becomes "ai.svd.openscience.desktop.desktop".
-  // https://developer.gnome.org/documentation/guidelines/maintainer/integrating.html
-  // https://www.electron.build/docs/linux/
-  extraMetadata: {
-    desktopName: `${appId}.desktop`,
-  },
-  files: ["out/**/*", "resources/**/*"],
+const config: Configuration = {
+  appId,
+  productName: channel === "prod" ? product.productName : `${product.productName} ${channel === "dev" ? "Dev" : "Beta"}`,
+  artifactName: "Gridy-${os}-${arch}.${ext}",
+  directories: { output: "dist", buildResources: "resources" },
+  extraMetadata: { name: product.installName, desktopName: `${appId}.desktop` },
+  files: ["out/**/*", "!out/renderer/**/*.map", "resources/**/*", "!resources/opencode-cli*", ...nativeExclusions],
+  asarUnpack: ["out/main/chunks/*.node"],
   extraResources: [
-    {
-      from: "resources/openscience-config/",
-      to: "openscience-config/",
-      filter: ["**/*"],
-    },
-    {
-      from: "native/",
-      to: "native/",
-      filter: ["index.js", "index.d.ts", "build/Release/mac_window.node", "swift-build/**"],
-    },
+    { from: "resources/gridy-config", to: "gridy-config", filter: ["**/*"] },
+    { from: "native/", to: "native/", filter: ["index.js", "index.d.ts", "build/Release/mac_window.node", "swift-build/**"] },
+    ...(process.platform === "win32" ? [{ from: "resources/tool-runtime/staged", to: "tool-runtime" }] : []),
   ],
-  mac: {
-    category: "public.app-category.developer-tools",
-    icon: `resources/icons/icon.icns`,
-    hardenedRuntime: true,
-    gatekeeperAssess: false,
-    entitlements: "resources/entitlements.plist",
-    entitlementsInherit: "resources/entitlements.plist",
-    notarize: true,
-    target: ["dmg", "zip"],
-  },
-  dmg: {
-    sign: true,
-  },
-  protocols: {
-    name: "OpenScience",
-    schemes: ["openscience"],
-  },
+  protocols: { name: "Gridy", schemes: ["gridy"] },
+  // Historical managed clients still request latest.yml from this repository.
+  generateUpdatesFilesForAllChannels: false,
+  publish: null,
   win: {
-    icon: `resources/icons/icon.ico`,
-    signtoolOptions: {
-      sign: signWindows,
-    },
-    target: ["nsis"],
+    icon: "resources/icons/icon.ico",
+    signAndEditExecutable: true,
+    target: [{ target: "nsis", arch: ["x64"] }],
     verifyUpdateCodeSignature: false,
   },
   nsis: {
     oneClick: true,
     perMachine: false,
-    shortcutName: "OpenScience",
-    installerIcon: `resources/icons/icon.ico`,
-    installerHeaderIcon: `resources/icons/icon.ico`,
+    include: "resources/installer.nsh",
+    deleteAppDataOnUninstall: false,
+    shortcutName: "Gridy",
+    uninstallDisplayName: "Gridy ${version}",
+    installerIcon: "resources/icons/icon.ico",
+    installerHeaderIcon: "resources/icons/icon.ico",
   },
-  linux: {
-    icon: `resources/icons`,
-    category: "Development",
-    executableName: appId,
-    desktop: {
-      entry: {
-        // Match the installed .desktop file and hicolor icon basename so
-        // Linux shells can associate the running Electron window with its launcher.
-        StartupWMClass: appId,
-      },
-    },
-    target: ["AppImage", "deb", "rpm"],
-  },
-})
-
-function getConfig() {
-  const appId = APP_IDS[channel]
-  const base = getBase(appId)
-
-  switch (channel) {
-    case "dev": {
-      return {
-        ...base,
-        appId,
-        productName: "OpenScience Dev",
-        rpm: { packageName: "openscience-dev" },
-      }
-    }
-    case "beta": {
-      return {
-        ...base,
-        appId,
-        productName: "OpenScience Beta",
-        protocols: { name: "OpenScience Beta", schemes: ["openscience"] },
-        publish: { provider: "github", owner: "svd-ai-lab", repo: "openscience", channel: "beta" },
-        rpm: { packageName: "openscience-beta" },
-      }
-    }
-    case "prod": {
-      return {
-        ...base,
-        appId,
-        productName: "OpenScience",
-        protocols: { name: "OpenScience", schemes: ["openscience"] },
-        publish: { provider: "github", owner: "svd-ai-lab", repo: "openscience", channel: "latest" },
-        rpm: { packageName: "openscience" },
-      }
-    }
-  }
+  mac: { icon: "resources/icons/icon.icns", target: ["dmg", "zip"], category: "public.app-category.developer-tools" },
+  linux: { icon: "resources/icons", executableName: appId, target: ["AppImage"], category: "Development" },
 }
 
-export default getConfig()
+export default config

@@ -2,6 +2,9 @@ import { sentryVitePlugin } from "@sentry/vite-plugin"
 import { defineConfig } from "electron-vite"
 import appPlugin from "@opencode-ai/app/vite"
 import * as fs from "node:fs/promises"
+import { loadProductConfig } from "./scripts/product"
+
+const product = loadProductConfig()
 
 const OPENCODE_SERVER_DIST = "../opencode/dist/node"
 
@@ -35,10 +38,22 @@ export default defineConfig({
   main: {
     define: {
       "import.meta.env.OPENCODE_CHANNEL": JSON.stringify(channel),
+      "import.meta.env.GRIDY_APP_IDS": JSON.stringify(product.appIds),
     },
     build: {
       rollupOptions: {
         input: { index: "src/main/index.ts", sidecar: "src/main/sidecar.ts" },
+        // Keep this identical to electron-vite's Node 20.11+ shim. Its regex insertion can
+        // corrupt bundled TypeScript, while a Rollup banner places the shim safely.
+        output: {
+          banner: `
+// -- CommonJS Shims --
+import __cjs_mod__ from 'node:module';
+const __filename = import.meta.filename;
+const __dirname = import.meta.dirname;
+const require = __cjs_mod__.createRequire(import.meta.url);
+`,
+        },
       },
       externalizeDeps: { include: [nodePtyPkg] },
     },

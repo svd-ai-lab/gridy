@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "platform": "win32",
+  "architecture": "x64",
+  "indexUrl": "https://mirrors.aliyun.com/pypi/simple/",
+  "pythonInstallMirror": "https://cnb.cool/astral-sh/python-build-standalone/-/releases/download",
+  "astralMirrorUrl": "https://cnrio.cn/",
+  "artifacts": {
+    "uv": {
+      "version": "0.12.9",
+      "file": "uv-x86_64-pc-windows-msvc.zip",
+      "url": "https://github.com/astral-sh/uv/releases/download/0.12.9/uv-x86_64-pc-windows-msvc.zip",
+      "bytes": 16895034,
+      "sha256": "ddbfcee1ac615a0499f6aa97b5ec8ebdf3ee4a7714a48055ec2ba0030e3cf810",
+      "license": "Apache-2.0 OR MIT"
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "name": "comsol-sim",
+      "repo": "svd-ai-lab/sim-plugin-comsol",
+      "commit": "770999a377b08706e80be7a269c80a2f4f32aab8",
+      "path": "src/sim_plugin_comsol/_skills/comsol",
+      "skillMdSha256": "0c979e297880e76f29be97a529d9a64857369cbbec15d2f7fc959500970188b9"
+    },
+    {
+      "name": "autodeskfusion",
+      "repo": "svd-ai-lab/sim-plugin-autodeskfusion",
+      "commit": "9cda7e8905a251c395c9f4312622231993f12e3a",
+      "path": "src/sim_plugin_autodeskfusion/_skills/autodeskfusion",
+      "skillMdSha256": "c3b96ab7b53bfb2276618bc353aa201ec04a463bd9cd3f67bb8317a6b0fef05d"
+    },
+    {
+      "name": "abaqus-sim",
+      "repo": "svd-ai-lab/sim-plugin-abaqus",
+      "commit": "d91f4d91d2edf5657247a5496192a9da1a24a019",
+      "path": "src/sim_plugin_abaqus/_skills/abaqus",
+      "skillMdSha256": "8cc9950f05be88a9cb4cf2a1207c71539bd0b00b916d88660d3dc66845aafbc2"
+    },
+    {
+      "name": "fluent-sim",
+      "repo": "svd-ai-lab/sim-plugin-fluent",
+      "commit": "622289766a955958ead85560e2582aa7366c050f",
+      "path": "src/sim_plugin_fluent/_skills/fluent",
+      "skillMdSha256": "5801d1d2e7311df559b20a6bfe25aeccc66b0fe5ab2d23b399f6701f846a1aee"
+    },
+    {
+      "name": "workbench-sim",
+      "repo": "svd-ai-lab/sim-plugin-workbench",
+      "commit": "0b39e6248594a0448630db066f855f5788e48714",
+      "path": "src/sim_plugin_workbench/_skills/workbench",
+      "skillMdSha256": "59066eceb45733dd1aeeb544c22a17ec79a39c6f603214e6bce7cbc45c58691d"
+    },
+    {
+      "name": "mechanical-sim",
+      "repo": "svd-ai-lab/sim-plugin-mechanical",
+      "commit": "0ebb41b564e5845b2d2e03515cb4d9c43b4e8748",
+      "path": "src/sim_plugin_mechanical/_skills/mechanical",
+      "skillMdSha256": "8d050555bb04a224ab14881fe021d95d10d268baf4909996794242229eb7a7db"
+    },
+    {
+      "name": "flotherm-sim",
+      "repo": "svd-ai-lab/sim-plugin-flotherm",
+      "commit": "749d82e35e0af6a4ac50ac1a8c3a8e48defaa4f1",
+      "path": "src/sim_plugin_flotherm/_skills/flotherm",
+      "skillMdSha256": "0bc8001816ff822ce77eb05d37f66644b0a7516ad29c451f0806d11b2cef825c"
+    },
+    {
+      "name": "starccm-sim",
+      "repo": "svd-ai-lab/sim-plugin-starccm",
+      "commit": "3daad71dc23465b47f6a3b8e7b3f5ba07bd2ba30",
+      "path": "src/sim_plugin_starccm/_skills/starccm",
+      "skillMdSha256": "ad7ff0790af6195fd0b3da7822ba59a5f2b0745e4a2c93bdaca88d6d8f164bbc"
+    },
+    {
+      "name": "geometry-preview",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "geometry-preview",
+      "skillMdSha256": "7985c5707a279cc45445176331f929faa4128ff5c05dd4c904337d2995a96043"
+    },
+    {
+      "name": "simulation-need-discovery",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "simulation-need-discovery",
+      "skillMdSha256": "f8ad6dc0fde6b0e03bb85eb197fdfc093eb6f7463f660b79fa0d4ab1db0dd0ac"
+    },
+    {
+      "name": "sim-paper-reproduction",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "sim-paper-reproduction",
+      "skillMdSha256": "2b76db27710de66b9899a5acdb993bc0162b1ee5a107d4232696fd633c07b4d2"
+    },
+    {
+      "name": "research-paper-data",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "research-paper-data",
+      "skillMdSha256": "f56bcba85dd05635017ebe3cb2d9bf6ce6de6a983449a0193e0cc98708e21ebf"
+    },
+    {
+      "name": "ee-datasheet-compare",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "ee-datasheet-compare",
+      "skillMdSha256": "56f19d51e0bcba4c61794e3e743be31c3d65f7d05995c71b654ec968070a04a5"
+    },
+    {
+      "name": "external-solver-discovery",
+      "repo": "svd-ai-lab/sim-plugin-index",
+      "commit": "860612bcb12b2e28628b13ec4370c48d553eaef0",
+      "path": "skills/external-solver-discovery",
+      "skillMdSha256": "f124a219fb03a54e2aa96885a207cc9a2ea1e8bab1c70204071d83d2e646c8e7"
+    },
+    {
+      "name": "pdf",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "pdf",
+      "skillMdSha256": "b18f7c9525ae40d2baf87b176799ffef888804a9c5fb2719e4669fc016365175"
+    },
+    {
+      "name": "docx",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "docx",
+      "skillMdSha256": "bd376cdb865abc74b51875fd32a92b1f8afdb8d8dd1f782e6444b8436f75aba5"
+    },
+    {
+      "name": "xlsx",
+      "repo": "svd-ai-lab/sim-skills",
+      "commit": "fe68cc539c121ca0282724346936a3083b646225",
+      "path": "xlsx",
+      "skillMdSha256": "2fc591c0b0f11155f8428f5c4776f286a9b5f26e00768f5db5a5372790856fbb"
+    },
+    {
+      "name": "hfss",
+      "repo": "svd-ai-lab/sim-plugin-hfss",
+      "commit": "5b124849475f3e7cc87fc3a9998c2c0331d16a50",
+      "path": "src/sim_plugin_hfss/_skills/hfss",
+      "skillMdSha256": "b8f1a5f2467c39b9542721d5313c6ab434714f6e64292020590f717def8ef275"
+    },
+    {
+      "name": "spaceclaim",
+      "repo": "svd-ai-lab/sim-plugin-spaceclaim",
+      "commit": "8ad9f1edd3ed74474c52ab3d73271c41db784fe0",
+      "path": "skills/spaceclaim",
+      "skillMdSha256": "c9ff700e5796da852da5bd7be4a9bb52f1596f65a0e7cd181b052a5fac889d4d"
+    },
+    {
+      "name": "hypermesh-sim",
+      "repo": "svd-ai-lab/sim-plugin-hypermesh",
+      "commit": "1092ad5566c27a7eadf982e84fb283a61b9ea423",
+      "path": "src/sim_plugin_hypermesh/_skills/hypermesh",
+      "skillMdSha256": "86a4883d9f5823ae9a65ef48161de47bacbf5ce25b8eacd80660e2fcffd36d9e"
+    },
+    {
+      "name": "matlab-sim",
+      "repo": "svd-ai-lab/sim-plugin-matlab",
+      "commit": "f9c2ac86f6d75e80adb67e988ed74a920bd33f9e",
+      "path": "src/sim_plugin_matlab/_skills/matlab",
+      "skillMdSha256": "54458c921f2461cda5df723298ab9c07d296d2eb5fec072e329a47d0d1bbab80"
+    },
+    {
+      "name": "virtuoso",
+      "repo": "svd-ai-lab/virtuoso-bridge-lite",
+      "commit": "dc9a4ec5acb1971f683e4717ff9e5a635ba588cf",
+      "path": "skills/virtuoso",
+      "skillMdSha256": "376ef573e2476a9aa22ddcb365e1078a77e995739bba5037b07093857cf5973c"
+    },
+    {
+      "name": "spectre",
+      "repo": "svd-ai-lab/virtuoso-bridge-lite",
+      "commit": "dc9a4ec5acb1971f683e4717ff9e5a635ba588cf",
+      "path": "skills/spectre",
+      "skillMdSha256": "3e2f748d484991b655e9732c559a208f48616fb625e4ffe5f856241043e5e7ec"
+    },
+    {
+      "name": "optimizer",
+      "repo": "svd-ai-lab/virtuoso-bridge-lite",
+      "commit": "dc9a4ec5acb1971f683e4717ff9e5a635ba588cf",
+      "path": "skills/optimizer",
+      "skillMdSha256": "a22019e2fa64dc98c04aec0ec9aed6f2d2517c709bc716ce897e727e702e08e6"
+    }
+  ]
+}

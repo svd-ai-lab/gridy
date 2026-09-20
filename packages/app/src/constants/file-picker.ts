@@ -3,6 +3,8 @@ export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "im
 export const ACCEPTED_FILE_TYPES = [
   ...ACCEPTED_IMAGE_TYPES,
   "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/*",
   "application/json",
   "application/ld+json",
@@ -19,6 +21,7 @@ export const ACCEPTED_FILE_TYPES = [
   ".css",
   ".csv",
   ".cts",
+  ".docx",
   ".env",
   ".go",
   ".gql",
@@ -50,6 +53,7 @@ export const ACCEPTED_FILE_TYPES = [
   ".tsx",
   ".txt",
   ".xml",
+  ".xlsx",
   ".yaml",
   ".yml",
   ".zsh",
@@ -61,6 +65,8 @@ const MIME_EXT = new Map([
   ["image/gif", "gif"],
   ["image/webp", "webp"],
   ["application/pdf", "pdf"],
+  ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"],
+  ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"],
   ["application/json", "json"],
   ["application/ld+json", "jsonld"],
   ["application/toml", "toml"],
@@ -83,7 +89,7 @@ export const ACCEPTED_FILE_EXTENSIONS = Array.from(
   ),
 ).sort()
 
-export function filePickerFilters(ext?: string[]) {
+export function filePickerFilters(name: string, ext?: string[]) {
   if (!ext || ext.length === 0) return undefined
-  return [{ name: "Files", extensions: ext }]
+  return [{ name, extensions: ext }]
 }

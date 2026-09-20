@@ -4,7 +4,6 @@ import { SessionV1 } from "@opencode-ai/core/v1/session"
 
 import { Session } from "@/session/session"
 import { MessageV2 } from "@/session/message-v2"
-import { NextStepSuggestions } from "@/session/next-step-suggestions"
 import { SessionPrompt } from "@/session/prompt"
 import { SessionRevert } from "@/session/revert"
 import { SessionStatus } from "@/session/status"
@@ -93,7 +92,6 @@ export const SessionPaths = {
   share: `${root}/:sessionID/share`,
   init: `${root}/:sessionID/init`,
   summarize: `${root}/:sessionID/summarize`,
-  nextStepSuggestions: `${root}/:sessionID/next_step_suggestions`,
   prompt: `${root}/:sessionID/message`,
   promptAsync: `${root}/:sessionID/prompt_async`,
   command: `${root}/:sessionID/command`,
@@ -313,18 +311,6 @@ export const SessionApi = HttpApi.make("session")
             identifier: "session.summarize",
             summary: "Summarize session",
             description: "Generate a concise summary of the session using AI compaction to preserve key information.",
-          }),
-        ),
-        HttpApiEndpoint.get("nextStepSuggestions", SessionPaths.nextStepSuggestions, {
-          params: { sessionID: SessionID },
-          query: WorkspaceRoutingQuery,
-          success: described(NextStepSuggestions.Response, "Suggested next prompt drafts"),
-          error: [HttpApiError.BadRequest, ApiNotFoundError],
-        }).annotateMerge(
-          OpenApi.annotations({
-            identifier: "session.next_step_suggestions",
-            summary: "Get next step suggestions",
-            description: "Generate small draft prompts based on recent session context without submitting them.",
           }),
         ),
         HttpApiEndpoint.post("prompt", SessionPaths.prompt, {

@@ -5,6 +5,7 @@ import { encodeFilePath } from "@/context/file/path"
 import type { AgentPart, FileAttachmentPart, ImageAttachmentPart, Prompt } from "@/context/prompt"
 import { Identifier } from "@/utils/id"
 import { createCommentMetadata, formatCommentNote } from "@/utils/comment-note"
+import { isDocumentAttachment } from "./attachment-submission"
 
 type PromptRequestPart = (TextPartInput | FilePartInput | AgentPartInput) & { id: string }
 
@@ -22,7 +23,7 @@ type ContextFile = {
 type BuildRequestPartsInput = {
   prompt: Prompt
   context: ContextFile[]
-  images: ImageAttachmentPart[]
+  images: (Omit<ImageAttachmentPart, "blob"> & { dataUrl: string })[]
   text: string
   messageID: string
   sessionID: string
@@ -40,6 +41,13 @@ const fileQuery = (selection: FileSelection | undefined) =>
   selection ? `?start=${selection.startLine}&end=${selection.endLine}` : ""
 
 const mention = /(^|[\s([{"'])@(\S+)/g
+function documentAttachmentText(input: { filename: string; mime: string }) {
+  return [
+    `Document attachment selected without a stable local file path: ${input.filename} (${input.mime}).`,
+    "Gridy did not send the raw document to the model.",
+    "Attach it from disk or place it in the workspace so the agent can inspect it with tools.",
+  ].join(" ")
+}
 
 const parseCommentMentions = (comment: string) => {
   return Array.from(comment.matchAll(mention)).flatMap((match) => {
@@ -89,31 +97,43 @@ const toOptimisticPart = (part: PromptRequestPart, sessionID: string, messageID:
 }
 
 export function buildRequestParts(input: BuildRequestPartsInput) {
-  const requestParts: PromptRequestPart[] = [
-    {
-      id: Identifier.ascending("part"),
-      type: "text",
-      text: input.text,
-    },
-  ]
+  const requestParts: PromptRequestPart[] = input.text.trim()
+    ? [
+        {
+          id: Identifier.ascending("part"),
+          type: "text",
+          text: input.text,
+        },
+      ]
+    : []
 
   const files = input.prompt.filter(isFileAttachment).map((attachment) => {
     const path = absolute(input.sessionDirectory, attachment.path)
+    const source = attachment.source
+      ? {
+          ...attachment.source,
+          text: {
+            value: attachment.content,
+            start: attachment.start,
+            end: attachment.end,
+          },
+        }
+      : {
+          type: "file" as const,
+          text: {
+            value: attachment.content,
+            start: attachment.start,
+            end: attachment.end,
+          },
+          path,
+        }
     return {
       id: Identifier.ascending("part"),
       type: "file",
-      mime: "text/plain",
-      url: `file://${encodeFilePath(path)}${fileQuery(attachment.selection)}`,
-      filename: getFilename(attachment.path),
-      source: {
-        type: "file",
-        text: {
-          value: attachment.content,
-          start: attachment.start,
-          end: attachment.end,
-        },
-        path,
-      },
+      mime: attachment.mime ?? "text/plain",
+      url: attachment.url ?? `file://${encodeFilePath(path)}${fileQuery(attachment.selection)}`,
+      filename: attachment.filename ?? getFilename(attachment.path),
+      source,
     } satisfies PromptRequestPart
   })
 
@@ -182,14 +202,49 @@ export function buildRequestParts(input: BuildRequestPartsInput) {
     ]
   })
 
-  const images = input.images.map((attachment) => {
-    return {
-      id: Identifier.ascending("part"),
-      type: "file",
-      mime: attachment.mime,
-      url: attachment.dataUrl,
-      filename: attachment.sourcePath ?? attachment.filename,
-    } satisfies PromptRequestPart
+  const images = input.images.flatMap((attachment): PromptRequestPart[] => {
+    if (isDocumentAttachment(attachment.mime)) {
+      if (attachment.sourcePath) {
+        const filepath = absolute(input.sessionDirectory, attachment.sourcePath)
+        return [
+          {
+            id: Identifier.ascending("part"),
+            type: "file",
+            mime: attachment.mime,
+            url: `file://${encodeFilePath(filepath)}`,
+            filename: getFilename(filepath),
+            source: {
+              type: "file",
+              text: {
+                value: attachment.filename,
+                start: 0,
+                end: attachment.filename.length,
+              },
+              path: filepath,
+            },
+          } satisfies PromptRequestPart,
+        ]
+      }
+
+      return [
+        {
+          id: Identifier.ascending("part"),
+          type: "text",
+          text: documentAttachmentText({ filename: attachment.filename, mime: attachment.mime }),
+          synthetic: true,
+        } satisfies PromptRequestPart,
+      ]
+    }
+
+    return [
+      {
+        id: Identifier.ascending("part"),
+        type: "file",
+        mime: attachment.mime,
+        url: attachment.dataUrl,
+        filename: attachment.sourcePath ?? attachment.filename,
+      } satisfies PromptRequestPart,
+    ]
   })
 
   requestParts.push(...files, ...context, ...agents, ...images)

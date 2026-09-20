@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { app, utilityProcess } from "electron"
@@ -7,6 +6,10 @@ import { getLogger } from "./logging"
 import { getUserShell, loadShellEnv } from "./shell-env"
 import { getStore } from "./store"
 import { DEFAULT_SERVER_URL_KEY } from "./store-keys"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { gridyProfileEnv } from "./gridy-profile"
+import { verifyCatalogDirectory } from "../shared/skill-catalog"
+import { resolveToolRuntime } from "./tool-runtime"
 
 export type HealthCheck = { wait: Promise<void> }
 
@@ -28,11 +31,6 @@ type SpawnLocalServerOptions = {
   onExit?: (code: number) => void
 }
 
-function bundledConfigDir() {
-  if (app.isPackaged) return join(process.resourcesPath, "openscience-config")
-  return join(dirname(fileURLToPath(import.meta.url)), "../../resources/openscience-config")
-}
-
 export function getDefaultServerUrl(): string | null {
   const value = getStore().get(DEFAULT_SERVER_URL_KEY)
   return typeof value === "string" ? value : null
@@ -49,13 +47,15 @@ export function setDefaultServerUrl(url: string | null) {
 
 export function preferAppEnv(userDataPath: string) {
   const shell = process.platform === "win32" ? null : getUserShell()
+  const shellEnv = shell ? loadShellEnv(shell, getLogger()) : null
   Object.assign(process.env, {
-    ...(shell ? loadShellEnv(shell, getLogger()) : null),
+    ...shellEnv,
     OPENCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
     OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
     OPENCODE_CLIENT: "desktop",
-    XDG_STATE_HOME: process.env.XDG_STATE_HOME ?? userDataPath,
+    ...gridyProfileEnv(userDataPath),
   })
+  return shellEnv
 }
 
 export async function spawnLocalServer(
@@ -67,7 +67,7 @@ export async function spawnLocalServer(
   const sidecar = join(dirname(fileURLToPath(import.meta.url)), "sidecar.js")
   const child = utilityProcess.fork(sidecar, [], {
     cwd: process.cwd(),
-    env: createSidecarEnv(),
+    env: createSidecarEnv(options.userDataPath),
     serviceName: SIDECAR_SERVICE_NAME,
     stdio: "pipe",
   })
@@ -188,9 +188,9 @@ export async function spawnLocalServer(
 }
 
 export async function checkHealth(url: string, password?: string | null): Promise<boolean> {
-  let healthUrl: URL
+  let healthUrls: URL[]
   try {
-    healthUrl = new URL("/global/health", url)
+    healthUrls = [new URL("/api/health", url), new URL("/global/health", url)]
   } catch {
     return false
   }
@@ -201,27 +201,46 @@ export async function checkHealth(url: string, password?: string | null): Promis
     headers.set("authorization", `Basic ${auth}`)
   }
 
-  try {
-    const res = await fetch(healthUrl, {
-      method: "GET",
-      headers,
-      signal: AbortSignal.timeout(3000),
-    })
-    return res.ok
-  } catch {
-    return false
+  for (const healthUrl of healthUrls) {
+    try {
+      const res = await fetch(healthUrl, {
+        method: "GET",
+        headers,
+        signal: AbortSignal.timeout(3000),
+      })
+      if (res.ok) return true
+    } catch {}
   }
+  return false
 }
 
-function createSidecarEnv(): Record<string, string> {
+function createSidecarEnv(userDataPath: string): Record<string, string> {
   const env = Object.fromEntries(
     Object.entries(process.env).flatMap(([key, value]) => (value === undefined ? [] : [[key, String(value)]])),
   )
   delete env.DEBUG
   if (process.platform === "linux") delete env.LD_PRELOAD
-  if (!app.isPackaged) env.OPENCODE_DISABLE_CHANNEL_DB = "1"
-  const configDir = bundledConfigDir()
-  if (existsSync(configDir)) env.OPENCODE_CONFIG_DIR = configDir
+  for (const key of Object.keys(env)) {
+    if (key.startsWith("SIM_STUDIO_") || key.startsWith("SIMSTUDIO_") || key === "OPENCODE_CONFIG_CONTENT") delete env[key]
+  }
+  const configDir = app.isPackaged
+    ? join(process.resourcesPath, "gridy-config")
+    : join(dirname(fileURLToPath(import.meta.url)), "../../resources/gridy-config")
+  const skillDirectory = join(configDir, "skill-baseline")
+  verifyCatalogDirectory(skillDirectory, app.getVersion())
+  const generated = join(userDataPath, "generated-config")
+  mkdirSync(generated, { recursive: true })
+  const config = join(generated, "opencode.json")
+  writeFileSync(config, JSON.stringify({
+    $schema: "https://opencode.ai/config.json",
+    instructions: [join(configDir, "AGENTS.md")],
+    skills: { paths: [skillDirectory] },
+  }) + "\n")
+  Object.assign(env, gridyProfileEnv(userDataPath), {
+    OPENCODE_CONFIG_DIR: configDir,
+    OPENCODE_CONFIG: config,
+    ...resolveToolRuntime(app.isPackaged ? process.resourcesPath : dirname(fileURLToPath(import.meta.url)), userDataPath, app.isPackaged, env.PATH),
+  })
   return env
 }
 

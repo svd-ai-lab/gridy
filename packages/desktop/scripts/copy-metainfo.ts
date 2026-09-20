@@ -3,9 +3,9 @@ import { resolveChannel } from "./utils"
 const arg = process.argv[2]
 const channel = arg === "dev" || arg === "beta" || arg === "prod" ? arg : resolveChannel()
 
-const appId = channel === "prod" ? "ai.svd.openscience.desktop" : `ai.svd.openscience.desktop.${channel}`
+const appId = channel === "prod" ? "ai.svd.gridy.desktop" : `ai.svd.gridy.desktop.${channel}`
 const productName =
-  channel === "prod" ? "OpenScience" : `OpenScience ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
+  channel === "prod" ? "Gridy" : `Gridy ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
 const summary = `Open science AI workbench based on OpenCode${channel !== "prod" ? ` (${channel})` : ""}`
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -24,7 +24,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 
   <description>
     <p>
-      OpenScience is an open source science workbench based on OpenCode. It bundles science workflows and uses OpenCode's native model providers.
+      Gridy is an open source science workbench based on OpenCode. It bundles science workflows and uses OpenCode's native model providers.
     </p>
   </description>
 
@@ -32,9 +32,9 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 
   <content_rating type="oars-1.1" />
 
-  <url type="bugtracker">https://github.com/svd-ai-lab/openscience/issues</url>
-  <url type="homepage">https://github.com/svd-ai-lab/openscience</url>
-  <url type="vcs-browser">https://github.com/svd-ai-lab/openscience</url>
+  <url type="bugtracker">https://github.com/svd-ai-lab/gridy/issues</url>
+  <url type="homepage">https://github.com/svd-ai-lab/gridy</url>
+  <url type="vcs-browser">https://github.com/svd-ai-lab/gridy</url>
 
   <screenshots>
     <screenshot type="default">

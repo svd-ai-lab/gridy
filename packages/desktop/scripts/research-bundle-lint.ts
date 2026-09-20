@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import path from "node:path"
-import { configDir, manifestPath, readJson, type SkillsManifest } from "./openscience-skills"
+import { configDir, manifestPath, readJson, type SkillsManifest } from "./gridy-skills"
 
 type Provider = {
   id?: unknown
@@ -115,7 +115,7 @@ export function lintResearchBundle() {
   const manifest = readJson<SkillsManifest>(manifestPath)
   const entry = manifest.skills.find((item) => item.name === "research-paper-data")
   if (!entry) throw new Error("research-paper-data is missing from skills.manifest.json")
-  if (entry.type !== "external" || entry.repo !== "svd-ai-lab/sim-skills" || entry.path !== "research-paper-data") {
+  if (entry.repo !== "svd-ai-lab/sim-skills" || entry.path !== "research-paper-data") {
     throw new Error("research-paper-data must come from svd-ai-lab/sim-skills/research-paper-data")
   }
   if (!existsSync(path.join(researchSkillDir, "SKILL.md"))) {

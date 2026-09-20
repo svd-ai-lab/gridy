@@ -8,7 +8,6 @@ import { SessionShare } from "@/share/session"
 import { Session } from "@/session/session"
 import { SessionCompaction } from "@/session/compaction"
 import { MessageV2 } from "@/session/message-v2"
-import { NextStepSuggestions } from "@/session/next-step-suggestions"
 import { SessionPrompt } from "@/session/prompt"
 import { SessionRevert } from "@/session/revert"
 import { SessionRunState } from "@/session/run-state"
@@ -19,6 +18,7 @@ import { MessageID, PartID, SessionID } from "@/session/schema"
 import { NamedError } from "@opencode-ai/core/util/error"
 import { Cause, Effect, Option, Schema, Scope } from "effect"
 import * as Stream from "effect/Stream"
+import { InstanceState } from "@/effect/instance-state"
 import { HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/unstable/httpapi"
 import { InstanceHttpApi } from "../api"
@@ -58,13 +58,13 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session", 
     const statusSvc = yield* SessionStatus.Service
     const todoSvc = yield* Todo.Service
     const summary = yield* SessionSummary.Service
-    const suggestions = yield* NextStepSuggestions.Service
     const events = yield* EventV2Bridge.Service
     const scope = yield* Scope.Scope
 
     const list = Effect.fn("SessionHttpApi.list")(function* (ctx: { query: typeof ListQuery.Type }) {
+      const directory = ctx.query.directory ? yield* InstanceState.directory : undefined
       return yield* session.list({
-        directory: ctx.query.scope === "project" ? undefined : ctx.query.directory,
+        directory: ctx.query.scope === "project" ? undefined : directory,
         scope: ctx.query.scope,
         path: ctx.query.path,
         roots: ctx.query.roots,
@@ -292,16 +292,6 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session", 
       return true
     })
 
-    const nextStepSuggestions = Effect.fn("SessionHttpApi.nextStepSuggestions")(function* (ctx: {
-      params: { sessionID: SessionID }
-    }) {
-      const current = yield* requireSession(ctx.params.sessionID)
-      const page = yield* SessionError.mapStorageNotFound(
-        MessageV2.page({ sessionID: ctx.params.sessionID, limit: 8 }),
-      )
-      return yield* suggestions.suggest({ session: current, messages: page.items })
-    })
-
     const prompt = Effect.fn("SessionHttpApi.prompt")(function* (ctx: {
       params: { sessionID: SessionID }
       payload: typeof PromptPayload.Type
@@ -438,7 +428,6 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session", 
       .handle("share", share)
       .handle("unshare", unshare)
       .handle("summarize", summarize)
-      .handle("nextStepSuggestions", nextStepSuggestions)
       .handle("prompt", prompt)
       .handle("promptAsync", promptAsync)
       .handle("command", command)

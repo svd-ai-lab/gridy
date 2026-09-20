@@ -27,3 +27,5 @@ out/
 resources/opencode-cli*
 resources/icons
 resources/*.metainfo.xml
+.tool-runtime-cache/
+resources/tool-runtime/staged/
