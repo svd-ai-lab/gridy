@@ -106,7 +106,7 @@ async function resolveArtifact(artifact: Artifact) {
   if (offline) throw new Error(`Offline tool-runtime cache is missing verified artifact: ${artifact.file}`)
   const response = await fetch(artifact.url, { signal: AbortSignal.timeout(60_000) })
   if (!response.ok || !response.body) throw new Error(`Failed to download ${artifact.url}: HTTP ${response.status}`)
-  await Bun.write(target, response)
+  await Bun.write(target, await response.arrayBuffer())
   const bytes = Bun.file(target).size
   const digest = await sha256(target)
   if (bytes !== artifact.bytes || digest !== artifact.sha256) {
