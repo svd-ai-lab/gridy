@@ -443,8 +443,8 @@ export const dict = {
   "wsl.onboarding.notFound": "not found",
   "wsl.onboarding.version": "Version: {{version}}",
   "wsl.onboarding.unknown": "unknown",
-  "wsl.onboarding.expectedVersion": "expected {{version}}",
-  "wsl.onboarding.versionMismatch": "Installed version does not match the expected OpenCode version.",
+  "wsl.onboarding.desktopVersion": "desktop {{version}}",
+  "wsl.onboarding.versionMismatch": "Installed version does not match the desktop app version.",
   "wsl.onboarding.adding": "Adding...",
 
   "help.tabs.toast.ariaLabel": "Introducing Tabs. Organize your work and active sessions with tabs",
