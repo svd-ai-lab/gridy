@@ -33,6 +33,7 @@ Install Git, Node.js 24, and the Bun version declared in `package.json`.
 From the repository root on Windows PowerShell:
 
 ```powershell
+git config --global core.longpaths true
 bun install --linker isolated --ignore-scripts
 bun run --cwd packages/core fix-node-pty
 $env:OPENCODE_CHANNEL = "prod"

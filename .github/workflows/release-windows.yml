@@ -29,6 +29,7 @@ jobs:
         run: |
           $package = Get-Content packages/desktop/package.json -Raw | ConvertFrom-Json
           if ($env:RELEASE_VERSION -ne $package.version) { throw "Version mismatch" }
+          git config --global core.longpaths true
           bun run --cwd packages/core fix-node-pty
           Copy-Item packages/ui/src/custom-elements.d.ts packages/app/src/custom-elements.d.ts -Force
           try {
